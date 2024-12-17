@@ -17,3 +17,13 @@ To update the requirements file run:
 `pip freeze > requirements.txt`
 
 ---
+
+### Run the application
+Examples:
+`python3 main.py --video <path_to_video> --optical_flow_method farneback`
+
+`python3 main.py --video <path_to_input_video> --model searaft_models/Tartan-C-T-TSKH-spring540x960-M.pth --device cuda --output <path_to_output> --optical_flow_method sea-raft`
+
+### Sources
+- SEA-RAFT: https://github.com/princeton-vl/SEA-RAFT
+- optical flow visualization: https://github.com/tomrunia/OpticalFlow_Visualization
