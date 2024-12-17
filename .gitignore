@@ -6,6 +6,10 @@ __pycache__/
 venv/
 env/
 
+# Inputs and outputs
+input/
+output/
+
 # Logs
 *.log
 
