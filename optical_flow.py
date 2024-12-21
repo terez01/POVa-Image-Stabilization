@@ -2,44 +2,73 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from utils.flow_viz import flow_to_image
+from conversion_utils import frames_to_tensor
 
-# TODO
-def estimate_flow_sea_raft(model, frames):
+import torch
+import torchvision.transforms as T
+from torchvision.models.optical_flow import raft_large, Raft_Large_Weights
+
+def estimate_optical_flow_raft(frames, device="cuda" if torch.cuda.is_available() else "cpu"):
     """
-    Placeholder for optical flow estimation using SEA RAFT model.
+    @brief Estimates optical flow using the RAFT method.
 
-    Args:
-        model: Pretrained SEA RAFT model for optical flow.
-        frames (list): List of video frames (numpy arrays).
+    @param frames List of video frames.
+    @return Estimated optical flow between consecutive frames.
 
-    Returns:
-        int: Currently returns 0 as this is a placeholder.
+    source: https://pytorch.org/vision/0.12/auto_examples/plot_optical_flow.html
     """
-    # Example usage:
-    # flow = model(frame1, frame2)  # Optical flow estimation
-    # return flow
-    return 0
+    # Initialize RAFT model
+    model = raft_large(weights=Raft_Large_Weights.DEFAULT).to(device)
+    model.eval()
+    
+    frames_tensor = frames_to_tensor(frames)
 
+    # Preprocessing necessary for RAFT
+    def preprocess(batch):
+        transforms = T.Compose([
+            T.ConvertImageDtype(torch.float32),
+            T.Resize(size=(520, 960)),          # RAFT input
+            T.Normalize(mean=0.5, std=0.5),     # map [0, 1] into [-1, 1]
+        ])
+        batch = transforms(batch)
+        return batch
 
-def estimate_flow_farneback(frames):
-    """
-    Estimates optical flow using the Farneback method.
+    frames_tensor = preprocess(frames_tensor).to(device)
 
-    Args:
-        frames (list): List of video frames (numpy arrays).
-
-    Returns:
-        list: Optical flow between consecutive frames, where each flow 
-              is a 2D array of shape (height, width, 2). 
-              - The first channel ([..., 0]) contains horizontal displacement.
-              - The second channel ([..., 1]) contains vertical displacement.
-    """
     flows = []
 
-    for i in tqdm(range(len(frames) - 1), desc="Estimating Optical Flow (Farneback)"):
+    for i in tqdm(range(len(frames_tensor) - 1), desc="Estimating Optical Flow (RAFT)", dynamic_ncols=True):
+        img1 = frames_tensor[i:i+1]  # Shape (1, C, H, W)
+        img2 = frames_tensor[i+1:i+2]  # Shape (1, C, H, W)
+        
+        with torch.no_grad():
+            # predicting optical flow using RAFT
+            flow = model(img1, img2)[-1][0].cpu().numpy()
+
+            # ensure it has the same shape as other methods (H, W, 2)
+            flow = np.transpose(flow, (1, 2, 0))
+
+        flows.append(flow)
+
+    return flows
+
+
+def estimate_optical_flow_farneback(frames):
+    """
+    @brief Estimates optical flow using the Farneback method.
+
+    @param frames List of video frames.
+
+    @return Estimated optical flow between consecutive frames.
+    """
+    # Farneback needs grayscale frames
+    grayscale_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) for frame in frames]
+    
+    flows = []
+
+    for i in tqdm(range(len(grayscale_frames) - 1), desc="Estimating Optical Flow (Farneback)", dynamic_ncols=True):
         flow = cv2.calcOpticalFlowFarneback(
-            frames[i], frames[i + 1], None,
+            grayscale_frames[i], grayscale_frames[i + 1], None,
             pyr_scale=0.5, levels=3, winsize=15, iterations=3,
             poly_n=5, poly_sigma=1.2, flags=0
         )
@@ -47,76 +76,23 @@ def estimate_flow_farneback(frames):
     
     return flows
 
-#! DOESNT WORK YET - optional task
-def estimate_flow_lucas_kanade(frames):
-    """
-    Estimates optical flow using the Lucas-Kanade method.
 
-    Args:
-        frames (list): List of video frames (numpy arrays).
-
-    Returns:
-        list: Optical flow between consecutive frames, represented as a list 
-              of 3D arrays of shape (height, width, 2), with horizontal and 
-              vertical displacements.
+def estimate_optical_flow_deepflow(frames):
     """
-    lk_params = dict(winSize=(15, 15), maxLevel=2, 
-                     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+    @brief Estimates optical flow using the DeepFlow method.
+
+    @param frames List of video frames.
+
+    @return Estimated optical flow between consecutive frames.
+    """
+    # Deepflow needs grayscale frames
+    grayscale_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) for frame in frames]
+
     flows = []
+    deepflow = cv2.optflow.createOptFlow_DeepFlow()
 
-    for i in tqdm(range(len(frames) - 1), desc="Estimating Optical Flow (Lucas-Kanade)"):
-        p0 = cv2.goodFeaturesToTrack(frames[i], mask=None, maxCorners=100, qualityLevel=0.3, minDistance=7)
-        p1, st, err = cv2.calcOpticalFlowPyrLK(frames[i], frames[i + 1], p0, None, **lk_params)
-
-        # Initialize flow as a 3D array with shape (height, width, 2)
-        flow = np.zeros((frames[i].shape[0], frames[i].shape[1], 2), dtype=np.float32)
-
-        for j, good_new in enumerate(p1):
-            a, b = good_new.ravel()
-            flow[int(p0[j][0][1]), int(p0[j][0][0]), 0] = a - p0[j][0][0]  # X displacement
-            flow[int(p0[j][0][1]), int(p0[j][0][0]), 1] = b - p0[j][0][1]  # Y displacement
-
-        flows.append(flow)
-    
-    return flows
-
-
-def estimate_flow_deepflow(frames):
-    """
-    Estimates optical flow using the DeepFlow method.
-
-    Args:
-        frames (list): List of video frames (numpy arrays).
-
-    Returns:
-        list: Optical flow between consecutive frames, where each flow 
-              is a 2D array of shape (height, width, 2).
-    """
-    dis = cv2.optflow.createOptFlow_DeepFlow()
-    flows = []
-
-    for i in tqdm(range(len(frames) - 1), desc="Estimating Optical Flow (DeepFlow)"):
-        flow = dis.calc(frames[i], frames[i + 1], None)
+    for i in tqdm(range(len(grayscale_frames) - 1), desc="Estimating Optical Flow (DeepFlow)", dynamic_ncols=True):
+        flow = deepflow.calc(grayscale_frames[i], grayscale_frames[i + 1], None)
         flows.append(flow)
 
     return flows
-
-
-def visualize_flow(flows):
-    """
-    Converts optical flow to RGB images for visualization.
-
-    Args:
-        flows (list): List of optical flow fields (numpy arrays), where 
-                      each flow has shape (height, width, 2).
-
-    Returns:
-        list: List of visualized frames (numpy arrays in RGB format).
-    """
-    visualized_frames = []
-
-    for flow in tqdm(flows, desc="Visualizing Optical Flow"):
-        vis_frame = flow_to_image(flow)
-        visualized_frames.append(vis_frame)
-
-    return visualized_frames
