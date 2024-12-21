@@ -20,9 +20,13 @@ To update the requirements file run:
 
 ### Run the application
 Example:
-`python3 main.py --video <path_to_input_video> --output <path_to_output> --method raft`
+`python3 main.py --video <path_to_input_video> --output <path_to_output> --method raft --visualize_flow`
 
 ### Sources
 - https://arxiv.org/abs/2003.12039
 - https://pytorch.org/vision/main/models/raft.html
 - https://pytorch.org/vision/0.12/auto_examples/plot_optical_flow.html
+
+### Datasets
+- https://lmb.informatik.uni-freiburg.de/resources/datasets/FlyingChairs.en.html#flyingchairs
+- http://sintel.is.tue.mpg.de/downloads
