@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from video_utils import extract_frames, save_video, visualize_flow
 from optical_flow import estimate_optical_flow_raft, estimate_optical_flow_farneback, estimate_optical_flow_deepflow
-
+from motion_compensation import compensate_motion
 
 def parse_arguments():
     """
@@ -16,6 +16,7 @@ def parse_arguments():
     parser.add_argument("--output", help="Name of the output video (default: output.avi)", type=str, default="output.avi")
     parser.add_argument("--method", help="Optical flow method to use (default: raft)", 
                         type=str, choices=["raft", "farneback", "deepflow"], default="raft")
+    parser.add_argument("--visualize_flow", help="Visualize optical flow", action="store_true")
     return parser.parse_args()
 
 
@@ -35,21 +36,14 @@ def main(args):
 
     flows = flow_method(frames)
 
-    #* VISUALIZE OPTICAL FLOW
-    visualized_flow_frames = visualize_flow(flows)
-
-    # the output dimensions of optical flow estimated with raft are different than the initial one
-    if args.method == "raft":
-        save_video(visualized_flow_frames, f"output/visualized_flow_{args.method}.avi", fps, (960, 520))
-    else:
+    #* VISUALIZE OPTICAL FLOW (if the '--visualize_flow' flag is set)
+    if args.visualize_flow:
+        visualized_flow_frames = visualize_flow(flows)
         save_video(visualized_flow_frames, f"output/visualized_flow_{args.method}.avi", fps, dimensions)
 
-    #* VYPOCET POSUNOV MEDZI SNIMKAMI
-
-
-    #* FIX BORDER ARTEFACTS
-
-
+    #* MOTION COMPENSATION, flow_shape:(H, W, 2)
+    stabilized_frames = compensate_motion(frames, flows)
+    save_video(stabilized_frames, f"output/stabilized_video_{args.method}.avi", fps, dimensions)
 
 
 if __name__ == '__main__':
