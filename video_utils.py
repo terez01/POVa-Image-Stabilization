@@ -31,7 +31,7 @@ def extract_frames(video_path):
         - fps: Video frames per second.
         - (width, height): Video resolution.
 
-    @throws ValueError If the video file cannot be opened.
+    @throws ValueError If the video file cannot be opened, dimensions are too small, or not divisible by 8.
     """
     cap = cv2.VideoCapture(video_path)
 
@@ -43,6 +43,12 @@ def extract_frames(video_path):
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # Resolution constraints
+    if width < 128 or height < 128:
+        raise ValueError(f"Video resolution too small: {width}x{height}. Minimum size is 128x128.")
+    if width % 8 != 0 or height % 8 != 0:
+        raise ValueError(f"Video resolution {width}x{height} must be divisible by 8.")
 
     frames = []
 
