@@ -18,7 +18,7 @@ def estimate_optical_flow_raft(frames, device="cuda" if torch.cuda.is_available(
     source: https://pytorch.org/vision/0.12/auto_examples/plot_optical_flow.html
     """
     # Initialize RAFT model
-    model = raft_large(weights=Raft_Large_Weights.DEFAULT).to(device)
+    model = raft_large(weights=Raft_Large_Weights.DEFAULT, progress=False).to(device)
     model.eval()
     
     frames_tensor = frames_to_tensor(frames)
@@ -27,7 +27,7 @@ def estimate_optical_flow_raft(frames, device="cuda" if torch.cuda.is_available(
     def preprocess(batch):
         transforms = T.Compose([
             T.ConvertImageDtype(torch.float32),
-            T.Resize(size=(520, 960)),          # RAFT input
+            # T.Resize(size=(520, 960)),        # no need to resize, resolution constraints were checked in extraction
             T.Normalize(mean=0.5, std=0.5),     # map [0, 1] into [-1, 1]
         ])
         batch = transforms(batch)
