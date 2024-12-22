@@ -2,10 +2,13 @@ import argparse
 import cv2
 import numpy as np
 from tqdm import tqdm
+import pickle
+import os
 
 from video_utils import extract_frames, save_video, visualize_flow
 from optical_flow import estimate_optical_flow_raft, estimate_optical_flow_farneback, estimate_optical_flow_deepflow
 from motion_compensation import compensate_motion
+import motion_check
 
 def parse_arguments():
     """
@@ -17,8 +20,26 @@ def parse_arguments():
     parser.add_argument("--method", help="Optical flow method to use (default: raft)", 
                         type=str, choices=["raft", "farneback", "deepflow"], default="raft")
     parser.add_argument("--visualize_flow", help="Visualize optical flow", action="store_true")
+    parser.add_argument("--save_flow", type=str, help="File to save the calculated flow.")
+    parser.add_argument("--load_flow", type=str, help="File to load the precomputed flow.")
     return parser.parse_args()
 
+
+def save_flow(flow, flow_file):
+    """Save the flow to a file."""
+    with open(flow_file, 'wb') as f:
+        pickle.dump(flow, f)
+    print(f"Flow saved to {flow_file}")
+
+
+def load_flow(flow_file):
+    """Load the flow from a file."""
+    if not os.path.exists(flow_file):
+        raise FileNotFoundError(f"Flow file not found: {flow_file}")
+    with open(flow_file, 'rb') as f:
+        flow = pickle.load(f)
+    print(f"Flow loaded from {flow_file}")
+    return flow
 
 def main(args):
 
@@ -34,7 +55,14 @@ def main(args):
 
     flow_method = optical_flow_methods[args.method]
 
-    flows = flow_method(frames)
+    if args.load_flow:
+        # Load precomputed flow
+        flows = load_flow(args.load_flow)
+    else:
+        # Calculate flow and optionally save it
+        flows = flow_method(frames)
+        if args.save_flow:
+            save_flow(flows, args.save_flow)
 
     #* VISUALIZE OPTICAL FLOW (if the '--visualize_flow' flag is set)
     if args.visualize_flow:
@@ -45,6 +73,8 @@ def main(args):
     stabilized_frames = compensate_motion(frames, flows)
     save_video(stabilized_frames, f"output/stabilized_video_{args.method}.avi", fps, dimensions)
 
+    # stabilized_flows = flow_method(stabilized_frames)
+    # motion_check.plot_motion(flows, stabilized_flows)
 
 if __name__ == '__main__':
     args = parse_arguments()
