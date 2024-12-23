@@ -20,7 +20,6 @@ def parse_arguments():
     parser.add_argument("--method", help="Optical flow method to use (default: raft)", 
                         type=str, choices=["raft", "farneback", "deepflow"], default="raft")
     parser.add_argument("--visualize_flow", help="Visualize optical flow", action="store_true")
-    parser.add_argument("--analyze_stabilization", help="Analyze video stabilization", action="store_true")
     parser.add_argument("--save_flow", type=str, help="File to save the calculated flow.")
     parser.add_argument("--load_flow", type=str, help="File to load the precomputed flow.")
     return parser.parse_args()
@@ -70,17 +69,19 @@ def main(args):
         visualized_flow_frames = visualize_flow(flows)
         save_video(visualized_flow_frames, f"output/visualized_flow_{args.method}.avi", fps, dimensions)
 
-    if args.analyze_stabilization:
-        analyze_stabilization_flag = True
-    else:
-        analyze_stabilization_flag = False
-
     #* MOTION COMPENSATION
-    stabilized_frames = compensate_motion(frames, flows, analyze_stabilization_flag)
+    stabilized_frames = compensate_motion(frames, flows)
     save_video(stabilized_frames, f"output/stabilized_video_{args.method}.avi", fps, dimensions)
 
-    # stabilized_flows = flow_method(stabilized_frames)
-    # motion_check.plot_motion(flows, stabilized_flows)
+    stabilized_flows = flow_method(stabilized_frames)
+    motion_check.plot_motion(flows, stabilized_flows)
+
+    metrics = motion_check.evaluate_stabilization(frames, stabilized_frames, flows, stabilized_flows)
+    print("\nMotion Analysis Results:")
+    print(f"Original Mean Motion: {metrics['original_mean_motion']:.4f}")
+    print(f"Stabilized Mean Motion: {metrics['stabilized_mean_motion']:.4f}")
+    print(f"Original Frame Stability: {metrics['original_stability']:.4f}")
+    print(f"Stabilized Frame Stability: {metrics['stabilized_stability']:.4f}")
 
 if __name__ == '__main__':
     args = parse_arguments()
