@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-def compensate_motion(frames, flows):
+def compensate_motion(frames, flows, smoothness_weight):
     """
     @brief Stabilizes video frames using optical flow data.
 
@@ -43,7 +43,7 @@ def compensate_motion(frames, flows):
     
     from scipy.optimize import minimize
     
-    def objective(smooth_path, original_path):
+    def objective(smooth_path, original_path, smoothness_weight):
         """
         @brief Objective function for path optimization
         
@@ -52,7 +52,6 @@ def compensate_motion(frames, flows):
 
         @return Combined error score from path difference and acceleration
         """
-        smoothness_weight = 200.0
         
         path_error = np.sum((smooth_path - original_path) ** 2)
         
@@ -62,8 +61,8 @@ def compensate_motion(frames, flows):
         return path_error + smoothness_weight * smoothness_error
     
     # optimize motion path
-    smooth_x = minimize(lambda x: objective(x, positions_x), positions_x.copy(), method='BFGS').x
-    smooth_y = minimize(lambda x: objective(x, positions_y), positions_y.copy(), method='BFGS').x
+    smooth_x = minimize(lambda x: objective(x, positions_x, smoothness_weight), positions_x.copy(), method='BFGS').x
+    smooth_y = minimize(lambda x: objective(x, positions_y, smoothness_weight), positions_y.copy(), method='BFGS').x
     
     # adjustment for initial padding that had some trouble fitting to frame
     smooth_x += pad * -0.1

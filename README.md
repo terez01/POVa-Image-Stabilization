@@ -20,16 +20,23 @@ To update the requirements file run:
 
 ### Run the application
 Simple example:
+
 `python3 main.py --video <path_to_input_video> --method raft`
 
 Visualize optical flow and analyze stabilization example:
+
 `python3 main.py --video <path_to_input_video> --output <path_to_output_video> --method raft --visualize_flow --analyze_stabilization`
 
 Save optical flow example:
+
 `python3 main.py --video <path_to_input_video> --save_flow <path_to_flow_output> --method raft`
 
 Load optical flow example:
+
 `python3 main.py --video <path_to_input_video> --load_flow <path_to_input_flow> --method raft`
+
+(ctrl+c, ctrl+v example):
+`python3 main.py --video ./input/01_short_360p.mp4 --method raft --visualize_flow --analyze_stabilization --smoothness_weight 500`
 
 ---
 
