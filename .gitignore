@@ -7,8 +7,8 @@ venv/
 env/
 
 # Inputs and outputs
-input/
-output/
+# input/
+# output/
 
 # Logs
 *.log
