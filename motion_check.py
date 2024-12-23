@@ -88,10 +88,8 @@ def evaluate_stabilization(original_frames, stabilized_frames, original_flows, s
     orig_ssim = []
     stab_ssim = []
     for i in range(len(original_frames)-1):
-        orig_score = ssim(original_frames[i], original_frames[i+1], 
-                         multichannel=True)
-        stab_score = ssim(stabilized_frames[i], stabilized_frames[i+1], 
-                         multichannel=True)
+        orig_score = ssim(original_frames[i], original_frames[i+1], win_size=3, channel_axis=2)
+        stab_score = ssim(stabilized_frames[i], stabilized_frames[i+1], win_size=3, channel_axis=2)
         orig_ssim.append(orig_score)
         stab_ssim.append(stab_score)
     
