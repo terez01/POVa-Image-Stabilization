@@ -80,8 +80,6 @@ def main(args):
     print("\nMotion Analysis Results:")
     print(f"Original Mean Motion: {metrics['original_mean_motion']:.4f}")
     print(f"Stabilized Mean Motion: {metrics['stabilized_mean_motion']:.4f}")
-    print(f"Original Frame Stability: {metrics['original_stability']:.4f}")
-    print(f"Stabilized Frame Stability: {metrics['stabilized_stability']:.4f}")
 
 if __name__ == '__main__':
     args = parse_arguments()
