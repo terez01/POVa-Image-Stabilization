@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 def plot_motion(flows, stable_flows):
     """
@@ -40,7 +41,7 @@ def plot_motion(flows, stable_flows):
     plt.tight_layout()
 
     # can be switched to plt.show()
-    plt.savefig("stabilization_plot.png")
+    plt.savefig("output/motion_plot.png")
 
 def evaluate_stabilization(original_frames, stabilized_frames, original_flows, stabilized_flows):
     """
@@ -58,7 +59,7 @@ def evaluate_stabilization(original_frames, stabilized_frames, original_flows, s
     # flow mgnitude analysis
     def calculate_flow_magnitudes(flows):
         magnitudes = []
-        for flow in flows:
+        for flow in tqdm(flows, desc="Calculating Flow Magnitudes"):
             dx = np.mean(flow[0])
             dy = np.mean(flow[1])
             mag = np.sqrt(dx**2 + dy**2)
@@ -73,14 +74,14 @@ def evaluate_stabilization(original_frames, stabilized_frames, original_flows, s
     
     
     plt.figure(figsize=(15, 5))
-    frames = np.arange(len(orig_magnitudes))
+    frames = np.arange(len(stab_magnitudes))
     plt.plot(frames, orig_magnitudes[:-1], 'r-', label='Original', alpha=0.7)
     plt.plot(frames, stab_magnitudes, 'b-', label='Stabilized', alpha=0.7)
     plt.title('Flow Magnitudes Over Time')
     plt.xlabel('Frame')
     plt.ylabel('Motion Magnitude')
     plt.legend()
-    plt.savefig("stabilization_plot.png")
+    plt.savefig("output/stabilization_plot.png")
 
     
     return metrics
