@@ -20,6 +20,7 @@ def parse_arguments():
     parser.add_argument("--method", help="Optical flow method to use (default: raft)", 
                         type=str, choices=["raft", "farneback", "deepflow"], default="raft")
     parser.add_argument("--visualize_flow", help="Visualize optical flow", action="store_true")
+    parser.add_argument("--analyze_stabilization", help="Analyze video stabilization", action="store_true")
     parser.add_argument("--save_flow", type=str, help="File to save the calculated flow.")
     parser.add_argument("--load_flow", type=str, help="File to load the precomputed flow.")
     return parser.parse_args()
@@ -69,8 +70,13 @@ def main(args):
         visualized_flow_frames = visualize_flow(flows)
         save_video(visualized_flow_frames, f"output/visualized_flow_{args.method}.avi", fps, dimensions)
 
-    #* MOTION COMPENSATION, flow_shape:(H, W, 2)
-    stabilized_frames = compensate_motion(frames, flows)
+    if args.analyze_stabilization:
+        analyze_stabilization_flag = True
+    else:
+        analyze_stabilization_flag = False
+
+    #* MOTION COMPENSATION
+    stabilized_frames = compensate_motion(frames, flows, analyze_stabilization_flag)
     save_video(stabilized_frames, f"output/stabilized_video_{args.method}.avi", fps, dimensions)
 
     # stabilized_flows = flow_method(stabilized_frames)

@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+
 def plot_motion_analysis(frames, flows, stabilized_frames):
     """Analyze and plot motion before and after stabilization"""
     original_x = [0]
@@ -11,7 +12,7 @@ def plot_motion_analysis(frames, flows, stabilized_frames):
     stabilized_y = [0]
     
     # Calculate motion for original and stabilized sequences
-    for i in range(len(flows)):
+    for i in tqdm(range(len(flows)), desc="Analyzing Stabilization"):
         # Original motion
         dx_orig = np.mean(flows[i][:, :, 0])
         dy_orig = np.mean(flows[i][:, :, 1])
@@ -64,7 +65,6 @@ def plot_motion_analysis(frames, flows, stabilized_frames):
     print(f"Vertical: {stability_improvement_y:.1f}%")
     
     return plt
-
 
 
 def get_accumulated_transform(flows):
@@ -124,7 +124,8 @@ def get_accumulated_transform(flows):
     
     return transforms
 
-def compensate_motion(frames, flows):
+
+def compensate_motion(frames, flows, analyze_stabilization_flag):
     h, w = frames[0].shape[:2]
     pad = int(max(h, w) * 0.5)  
     # pad_right = int(max(h, w) * 0.7)  
@@ -171,7 +172,7 @@ def compensate_motion(frames, flows):
     smooth_x += pad * -0.1
     
     stabilized_frames = []
-    for i in range(len(flows)):
+    for i in tqdm(range(len(flows)), desc="Stabilizing Video"):
         frame = padded_frames[i + 1]
         
         transform = np.array([
@@ -192,8 +193,9 @@ def compensate_motion(frames, flows):
         
         stabilized_frames.append(stabilized)
     
-    # Add this to your compensate_motion function:
-    plot = plot_motion_analysis(frames, flows, stabilized_frames)
-    plot.savefig("motion_analysis.png")
+    # Analyze only if flag is set
+    if analyze_stabilization_flag:
+        plot = plot_motion_analysis(frames, flows, stabilized_frames)
+        plot.savefig("output/motion_analysis.png")
 
     return stabilized_frames
